@@ -20,7 +20,7 @@ flowPlot <- function(flow.data, nyear){
   flow1 <- flow.data
 
   for (i in 1:length(flow.list)) {
-    std <- cbind(flow1[2], flow1[i+3], flow1[i+(nyear+2)])
+    std <- cbind(flow1[2], flow1[i+3], flow1[i+(nyear+3)])
     colnames(std) <- c("id", "year", "flow")
     std$flow <- gsub('[,]', '', std$flow)
     std$year <- gsub('[,]', '', std$year)
