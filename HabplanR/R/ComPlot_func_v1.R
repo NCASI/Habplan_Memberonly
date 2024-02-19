@@ -27,7 +27,7 @@ comPlot <- function(flow.data.1, flow.data.2, flow.data.3,
   flow1 <- flow.data.1
 
   for (i in 1:length(flow.list.1)) {
-    std <- cbind(flow1[2], flow1[i+3], flow1[i+(nyear+2)])
+    std <- cbind(flow1[2], flow1[i+3], flow1[i+(nyear+3)])
     colnames(std) <- c("id", "year", "flow")
     std$flow <- gsub('[,]', '', std$flow)
     std$year <- gsub('[,]', '', std$year)
@@ -52,7 +52,7 @@ comPlot <- function(flow.data.1, flow.data.2, flow.data.3,
   flow1 <- flow.data.2
 
   for (i in 1:length(flow.list.2)) {
-    std <- cbind(flow1[2], flow1[i+3], flow1[i+(nyear+2)])
+    std <- cbind(flow1[2], flow1[i+3], flow1[i+(nyear+3)])
     colnames(std) <- c("id", "year", "flow")
     std$flow <- gsub('[,]', '', std$flow)
     std$year <- gsub('[,]', '', std$year)
@@ -77,7 +77,7 @@ comPlot <- function(flow.data.1, flow.data.2, flow.data.3,
   flow1 <- flow.data.3
 
   for (i in 1:length(flow.list.3)) {
-    std <- cbind(flow1[2], flow1[i+3], flow1[i+(nyear+2)])
+    std <- cbind(flow1[2], flow1[i+3], flow1[i+(nyear+3)])
     colnames(std) <- c("id", "year", "flow")
     std$flow <- gsub('[,]', '', std$flow)
     std$year <- gsub('[,]', '', std$year)
