@@ -1,0 +1,126 @@
+Go to the habplan website for the most current documentation at
+http://ncasi.uml.edu/projects/habplan/
+
+OVERVIEW OF HABPLAN.
+
+Habplan is a harvest scheduling program that allows you to build an
+objective function from the supplied components that show up as
+checkboxes on the main menu.  Habplan is a simulation approach based on
+the Metropolis Algorithm.  It does not use simulated annealing or
+genetic algorithms, but is closely related.  Habplan is more like a
+random (feasible) schedule generator.  It keeps running and generating
+alterations to the previous schedule for as long as you like.  As the
+Metropolis iterations proceed, objective function weights are
+adaptively determined.  This enables Habplan to meet the users goals
+relative to each component in the objective function.  For example, the
+user specifies whether Flows should be level, decreasing, or increasing
+as well as how much year-to-year deviation is allowed in the flow.
+Habplan also provides the option of using the iterated conditional
+modes (ICM) algorithm to converge on a near optimal solution.  ICM
+should not be used until the Metropolis algorithm has reached a steady
+state.  This is indicated when the component checkboxes change color.
+You can also determine this by watching the output graphs.
+
+You get started by opening a form (from the edit menu) for a component
+that you're interested in.  Fill it out and then check the box on the
+main Habplan form.  This will cause habplan to read the component's
+data.  Assuming the data were OK, you are ready to work on filling out
+another component form, or to press start and begin the scheduling
+algorithm.  Use the save option so you don't have to fill the forms out
+again.
+
+The currently available components are:
+
+1) F=Flow: You can have as many of these as you want. A Flow component
+controls the flow of some output associated with each management option
+or regime.  You configure Habplan to have the number of components you
+desire by editing the file properties.hbp in the main Habplan
+directory.  After you enter the component (with the checkbox) you can
+open an associated graph from the Graph menu.
+
+1a) C=ClearCut Flow: This is a sub-component and must be associated
+with a parent Flow component.  Thus, you can have the first flow
+component (F1) and an associated clearcut Flow component C1(1).  You
+can have as many of these subcomponents as you want by editing
+properties.hbp.  This component reads a file that provides the size of
+the polygon.  It allows you to keep an even number of acres under
+certain options.  The option doesn't have to be clear cutting.  Also,
+the variable read in doesn't have to be acres.  After you enter the
+component (with the checkbox) you can open an associated graph from the
+Graph menu.
+
+1b) BK=BlockSize: This subcomponent controls blocksizes associated with
+the outputs from a parent Flow component.  The first BK associated with
+F1 is BK1(1).  You can have as many of these components as you want.
+BK components are used to prevent blocksizes from exceeding a user
+specified maximum.  After you enter the component (with the checkbox)
+you can open an associated graph from the Graph menu.
+
+2) BiolI=Biological TypeI: This component allows you to tell the
+scheduler to try to assign certain preferred management regimes to a
+particular stand or polygon.  It uses a process that is modeled after
+image classification.  You need to provide a dataset that gives
+classification variables for each stand, and designates certain stands
+to be training data.  If you're not familiar with remote sensing
+methods, this may sound like nonsense.  Again, you can use as many of
+this type of component as you want.  There are no graphs for BiolI or
+BiolII.
+
+3) BiolII=Biological TypeII: This component accomplishes the same thing
+as BiolI, but very directly.  You assign, for each polygon, a rating
+between 0 and 1 for each management regime.  The ratings must sum to
+1.  If a regime gets a 0, then it can't be assigned to that polygon, if
+it gets a 1 then it must be assigned in all schedules.  Values between
+0 and 1 provide relative rankings.  The BiolII approach is easy to
+understand and implement for the user, as long as they are able to go
+through the process for every polygon.  The BiolI approach lets you
+locate representative stands as training data, and the program uses
+those to internally rank management regimes as to desirability for each
+polygon.
+
+4) SMod=Spatial Model: This component allows you to specify the desired
+spatial juxtaposition of the management regimes, by supplying integer
+values for a parameter matrix, beta.  A negative value means to assign
+these regimes to adjacent polygons, and a positive value means to keep
+them apart.
+
+HABPLAN OUTPUT TO FILES 
+
+Under the Habplan File Menu you can click on output to open a
+fileoutput dialog box.  This allows you to save the schedule to a
+specified file either manually or after a specified number of
+iterations.  The default setting of 0 iterations means don't autosave.
+Pushing delete will delete all files currently checked for saving.
+Saves only occur on files that are checked. The schedule file is the
+only one checked for saving by default.
+
+1) The first row of the Schedule SaveFile gives the total number of
+polygons (nPolys).  After that there is 1 row per polygon which gives
+polygon Id and regime. Additional saves are appended to the end of the
+file. There is no way to know how many saved schedules there are in a
+file, just read nPoly lines too get each saved schedule until you get
+to the end of the file.
+
+<2) Each Flow term will have a SaveFile.  This is similar to the
+Schedule SaveFile, with the first line giving nPolys. After this,
+each line contains Polygon Id, regime, year, and output.
+
+3) The Graph Savefile contains lines from each active graph at the time
+of the save.  They are also in the order that the components appear
+on the main menu.  So if you have a flow graph and a ccflow graph
+open when you do the save, 4 lines will be added to the file.  The
+first to lines are the actual and target flows, while the last 2 lines
+are the actual and target ccflows.  If a blocksize graph is open,
+then 3 more lines are added ... 1 each for max, min, and average blocksize.  
+This allows you to produce fancy graphs using your favorite graphics package. 
+Habplan currently has limited graphics capability.
+
+There is also AN IMPORT OPTION under the file menu.  This allows
+you to save the current status of a run for later import.  You can
+save the current schedule and form settings.  Later you can import
+them both, check the appropriate objective function components and start
+working where you previously left off.
+
+Note that most selections from the menu act as toggles, i.e. if a graph
+is showing and you select it, it disappears.
+

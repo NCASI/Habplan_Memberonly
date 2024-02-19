@@ -1,0 +1,52 @@
+========FILE MENU
+
+Open - Use this to open a file that contains previously 
+saved settings for objective function component forms.
+
+Save - saves the current OBJ form settings
+
+Output - Opens a dialog where the user can save schedules
+flows or graphs to files.
+
+Import - Save or import previously saved schedules and associated
+form settings
+
+Quit - quit Habplan
+
+file names below quit are names of files containing
+settings that you previously saved.  Click on these
+to immediately make them current.
+
+
+========EDIT MENU
+
+Click on these entries to open or close OBJ Component
+Forms for editing.
+
+=======GRAPH MENU
+
+Click on these entries to open graphs that will be updated
+when Habplan is running.  Entries only appear here after
+you read some data by clicking on component check boxes.
+
+========MISC MENU
+
+Shrink - reduce to a minimum what shows on the OBJ forms.  You might
+want to do this to watch the goal values as Habplan runs.  Otherwise,
+lots of full size forms open at the same time can be messy.
+
+Config - Reconfigure the a main entry form to show a different combination
+of objective function components.
+
+========TOOLS MENU
+
+Import -  Save the current schedule or Reload a previously saved schedule.
+This is saved in a special file that only Habplan can read.
+
+BestSchedule - keep track of the best schedule so far.  See the on line 
+help for more detail.
+
+GIS-View - Open the Habplan GIS Viewer.
+
+Weights=1  -  Resets all the objective function form weights to 1.0.
+This is generally the best starting point for a component weight.  Then Habplan will do adjustments to meet the user set goals.

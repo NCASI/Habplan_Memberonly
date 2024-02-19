@@ -1,0 +1,23 @@
+One of the examples in the file menu allows you to quickly load the
+settings from a problem with 419 stands.  These data come from the
+Southeast USA.  There are 16 management options with options 1-15 being
+to clearcut the stand in the corresponding year.  Option 16 is to
+do-nothing.  The yield is in tons per acre.
+
+To run this example, click on example419.hbp under the File menu.
+Then check the F1 check box to add a flow component to the 
+objective function and read the associated data.
+Now you can open a graph for the F1 component under the Graph menu.
+Then push the start button and Habplan will start running.  
+
+Other components are added by clicking their checkboxes to read the
+associated data.   Graphs are only available when a component is added.
+However, biological and spatial model components don't have graphs.
+
+To change settings for a component, open it's control form under the
+Edit menu.   For example, after adding the F1 component, try changing
+the Flow model slope from positive to negative using the slider on the
+Flow control form.   Notice that the target flow  trends downward
+(red line) after you make this change.
+
+

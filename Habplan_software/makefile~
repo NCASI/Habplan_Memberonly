@@ -1,0 +1,41 @@
+#makefile for compiling java programs
+
+MAIN = Habplan3  #the main class. 
+SOURCE = *.java regime/*.java gis/*.java figure/*.java #a list of the java source files
+CLASS = ${SOURCE:.java=.class} #list of non-inner class files
+
+.SUFFIXES : .java .class  #important suffixes
+
+${MAIN} : ${CLASS}
+
+.java.class :       #how to make a .class file from a .java file
+	javac -nowarn $<
+
+r run: ${CLASS}   #forces the program to run, or compile then run
+	java -mx512m ${MAIN}  
+
+p profile:	#profile results in log.txt
+	java -mx512m -Xrunhprof:cpu=samples,depth=15,depth=15,file=log.txt  ${MAIN}
+
+copy:     #make a full copy for users and put on web site
+	echo example419.xml>hbp/oldJobs.hbp;\
+	cd ..;\
+	jar cvf /var/www/html/projects/habplan/habplan3.zip Habplan3/*.class Habplan3/gis/*.class Habplan3/com Habplan3/regime/*.class Habplan3/help/*.hlp  Habplan3/linear_algebra/*.class Habplan3/project/example419.xml  Habplan3/hbp/oldJobs.hbp Habplan3/hbp/properties.hbp  Habplan3/hbp/policy.hbp Habplan3/hbp/*.gif Habplan3/hbp/configuration.hbp  Habplan3/custom/*.java  Habplan3/example/ex419/ Habplan3/figure/*.class Habplan3/temp/ Habplan3/LP/lp_solve* Habplan3/h.bat
+
+
+
+upgrade:     #make an upgrade for user,  check  jar file name and version first
+	cd ..;\
+	jar cvf  /var/www/html/projects/habplan/hbp101712.zip  Habplan3/*.class Habplan3/gis/*.class Habplan3/com Habplan3/regime/*.class Habplan3/figure/*.class Habplan3/hbp/example419.hbp Habplan3/example/ex419 Habplan3/LP/lp_solve* Habplan3/project/example419.xml
+
+ex examples:    #copy the additional examples and put them at the web site
+	cd ~/myjava;\
+	mv Habplan3/example/ex1000/stands.shp ~/stands.shp;\
+	jar cvf  /var/www/html/projects/habplan/examples.zip Habplan3/project/ex419sub.xml Habplan3/example/ex419sub  Habplan3/project/ex500.xml  Habplan3/example/ex500  Habplan3/project/ex1000.xml   Habplan3/example/ex1000;\
+	mv ~/stands.shp Habplan3/example/ex1000/stands.shp;\
+	jar cvf /var/www/html/projects/habplan/ex4shapefile.zip Habplan3/example/ex1000/stands.shp
+
+
+clean:	#get rid of ~  and % files, be careful about editing this
+	find ~/myjava -name  '*.*~' -exec rm {} \;
+	find ~/myjava -name  '*~' -exec rm {} \;

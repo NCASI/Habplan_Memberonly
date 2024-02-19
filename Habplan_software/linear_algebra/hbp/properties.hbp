@@ -1,0 +1,10 @@
+#number of oldjobs to appear under FILE menu
+habplan.oldjobs=5
+#create properties for menu colors 
+habplan.main.background=0xccffcc
+habplan.flow.background=0xffffcc
+habplan.biol.background=0xff9966
+habplan.biol2.background=0xccffff
+habplan.block.background=0xffaaaa
+habplan.ccflow.background=0x8888ff
+habplan.spacemod.background=0xffaa66

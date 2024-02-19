@@ -1,0 +1,14 @@
+#!/bin/bash
+if [ $# -ne 1 ]
+then
+   echo  $# "USAGE: ./repeat look-for-this"
+   echo
+   exit
+fi
+
+for file in `ls *.java`
+do
+ echo "looking for $1 in $file"
+ cat "$file" |grep "$1"
+done
+

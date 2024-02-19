@@ -1,0 +1,679 @@
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import java.io.*;
+import figure.*;
+import org.xml.sax.Attributes;
+
+/**
+*A dialog for Habplan users to control the output
+*For example, to save management schedules
+*@author Paul Van Deusen (NCASI)  1/98
+*/
+public class OutputDialog extends JDialog {
+   
+  FrameMenu parent;
+    String  sep=", "; //use to separate entries in the output files
+  private JComboBox saveChoice;
+  private int saveIter=0;  //the iterations to save on
+  JFileButton schedButton,graphButton;
+  JTextField p1,p2;
+    JCheckBox checkSched,checkGraph, checkImport;
+    boolean isPrint=false;  //controls message printing for delete()
+  int nFlow=UserInput.nFlow;
+  FlowSavePanel[] flowPanel=new FlowSavePanel[nFlow+1];
+  BlockSavePanel[][] blockPanel=new BlockSavePanel[nFlow+1][]; 
+
+    boolean isReadSettings=false; //indicates that project file is being read
+  JButton saveNow, delete;
+  int delCount=0;  //used to requiring hitting delete button twice
+  int savedSchedsCount=0; //keep track of n of saved schedules
+  //User written stuff
+  CustomOutput custom = new CustomOutput();
+  
+public static void main (String args[]) {
+   JFrame frame=new JFrame ("Testing OutputDialog");
+   frame.setBounds(200,200,400,200);
+   //frame.show();
+   OutputDialog output= new OutputDialog((FrameMenu)frame, "Testing OutputDialog");
+   output.show();
+}/*end main*/
+
+
+public OutputDialog(FrameMenu parent, String s){
+  super(parent, s);
+  setBounds(300,100,300,200);
+  getContentPane().setLayout(new BorderLayout());
+  this.parent=parent;
+  int nBlock=0; //n of Block components
+  for (int i=1;i<=nFlow;i++) nBlock+=UserInput.nBKofF[i];
+  //saving control section
+     //saveNow button
+   Font font = new Font("Times", Font.BOLD, 14);
+   saveNow = new JButton("Save");
+    saveNow.addActionListener(new ButtonListener());
+    saveNow.setActionCommand("saveNow");
+    saveNow.setFont(font);
+    saveNow.setToolTipText("Append results for checked files");
+    delete = new JButton("Delete");
+    delete.addActionListener(new ButtonListener());
+    delete.setActionCommand("delete");
+    delete.setFont(font);
+    delete.setToolTipText("Press twice to delete checked files");
+       //iteration choice 
+   JLabel lab1=new JLabel("Autosave every");
+   JLabel lab2 = new JLabel("iterations");
+   saveChoice=new JComboBox();
+   for (int i=0; i<=9; i++)
+    saveChoice.addItem(Integer.toString(i));
+   for (int i=10; i<=100; i+=10)
+    saveChoice.addItem(Integer.toString(i)); 
+    saveChoice.addItem("200");
+    saveChoice.addItem("300");
+    saveChoice.addItem("500");
+    saveChoice.addItem("1000");
+  saveChoice.addItemListener(new Listener());
+
+  checkImport=new JCheckBox("Import");
+  checkImport.setToolTipText("Save output when project file is saved for import");
+  JPanel cPanel=new JPanel();  
+  cPanel.add(checkImport);
+  cPanel.add(lab1);  cPanel.add(saveChoice);  cPanel.add(lab2);
+  cPanel.add(saveNow);cPanel.add(delete);
+  getContentPane().add(cPanel,BorderLayout.NORTH);
+
+  //put schedule flow and block save into a central scroll pane
+  JPanel centerPanel=new JPanel(new GridLayout(1+nFlow+nBlock,1));
+   //save a schedule section
+  String file=UserInput.ExampleDir +  "saveSched";
+  p1=new JTextField(file,20);
+  schedButton= new JFileButton("Schedule SaveFile",parent,p1,null,null);
+  JPanel sPanel = new JPanel();
+  checkSched=new JCheckBox("Include",true);
+  sPanel.add(checkSched);sPanel.add(schedButton); sPanel.add(p1);
+  centerPanel.add(sPanel);
+   //save a flow  and block section
+   int  i=0,
+       cnt=1, //keep track of the n of FlowForms
+       cnt2=1; //keep track of the n of subcomponent BlockForms
+   while(i<=UserInput.nComponents){
+    i++;
+    if(cnt>nFlow)break;
+       try{
+    flowPanel[cnt]=new FlowSavePanel((FlowForm)parent.form[i],parent,cnt);
+    centerPanel.add(flowPanel[cnt]);
+    
+    if (UserInput.nBKofF[cnt]>0)blockPanel[cnt]=new BlockSavePanel[UserInput.nBKofF[cnt]+1];
+    cnt2=1;
+   while (cnt2<=UserInput.nBKofF[cnt] && i<=UserInput.nComponents){
+     i++;
+     try{
+      blockPanel[cnt][cnt2]=new BlockSavePanel((BlockForm)parent.form[i],parent,cnt,cnt2);
+      centerPanel.add(blockPanel[cnt][cnt2]);
+      cnt2++;
+     } catch(Exception e2){/*form[i] not a BlockForm, move on*/}
+   }/*end while cnt2*/
+   
+    cnt++;
+          } catch(Exception e){/*form[i] not a FlowForm, move on*/}   
+   }/*end while i*/
+   //put centerPanel in a ScrollPane
+   JScrollPane scroll = new JScrollPane(centerPanel);
+   scroll.setPreferredSize(new Dimension(200,150));
+   getContentPane().add(scroll,BorderLayout.CENTER);
+     //save graphs section
+  file=UserInput.ExampleDir +  "saveGraph";
+  p2=new JTextField(file,20);
+  graphButton= new JFileButton("Graph SaveFile",parent,p2,null,null);
+  JPanel gPanel = new JPanel();
+  checkGraph=new JCheckBox("Include",false);
+  gPanel.add(checkGraph);gPanel.add(graphButton); gPanel.add(p2);
+  getContentPane().add(gPanel,BorderLayout.SOUTH);
+   
+  pack();
+
+      addWindowListener(new WindowAdapter(){
+       public void windowClosing (WindowEvent event)
+    {
+     dispose();
+      
+    }
+      });
+
+}/*end constructor*/
+
+public class Listener implements ItemListener {
+ public void itemStateChanged(ItemEvent e){
+   saveIter=Integer.parseInt((String)saveChoice.getSelectedItem());
+   //parent.console.println("selection = " + saveIter);
+ }
+}//end inner Listener class
+
+/**
+* Handle button clicks
+**/  
+public class ButtonListener implements ActionListener{
+
+  public void actionPerformed(ActionEvent e) {
+    String cmd = e.getActionCommand();
+     
+    if (cmd.equals("saveNow")) {
+      parent.console.println("   Manual Save Completed.");   
+      saveManual();
+      delCount=0;
+     return;  
+    }  
+    if (cmd.equals("delete")) {   
+	isPrint=true;
+	deleteAll();   
+	isPrint=false;  
+    }/*end if cmd.equals(delete)*/  
+   
+  }/*end actionperformed()*/
+
+} /*end inner Listener class*/
+
+/**
+*Delete all the save files
+*/
+public void deleteAll(){
+       delCount++;
+      if(delCount==1){
+       parent.console.clear();
+       parent.console.println("\n\nIf you really want to delete the included files,\n push delete button again!");
+       return;
+       }//end if delCount==1
+       String fName=ObjForm.findFile(p1.getText());
+       File file1=new File(fName); //schedsave file
+      if (file1.exists() && checkSched.isSelected()){
+       file1.delete();
+       if(isPrint)parent.console.println("\nDeleted " + fName);
+       savedSchedsCount=0; //counts n of saves to sched file
+     }//end if 
+      for (int i=1;i<=nFlow;i++){ //flowSave files
+	 flowPanel[i].delete(); 
+	for(int j=1;j<=UserInput.nBKofF[i];j++)//blockSave files
+	  blockPanel[i][j].delete(); 
+	 }/*end for i*/
+       
+       fName=ObjForm.findFile(p2.getText());
+       file1=new File(fName); //graphsave file
+      if (file1.exists() && checkGraph.isSelected()){
+       file1.delete();
+       if(isPrint)parent.console.println("\nDeleted " + fName);
+     }//end if  
+       
+      delCount=0;
+}/*end deleteAll()*/
+
+/**
+*Save the current schedule to a user specified file
+*if userControl is true then use the Users write routine
+*if the user wants to.
+*/
+ public void saveASched(String fileName, boolean userControl){
+  if(!checkSched.isSelected())return;
+  boolean userRoutine=false;
+  int nPolys=parent.nPolys, i=0;
+  PrintWriter out=null;
+  String s,s1,s2;
+  //decide whether to use the users write routine
+  if (userControl && custom.isWriteSchedule())userRoutine=true;
+   try {
+       fileName=ObjForm.findFile(fileName);
+       File nf=new File(fileName);
+       boolean isAppend=nf.exists();//append mode if it already exists
+  out = new PrintWriter(new BufferedWriter(new FileWriter(fileName,isAppend)));
+     
+     for (i=1;i<=nPolys;i++){
+       s1=(String)ObjForm.polyArray.elementAt(i-1);
+      s=s1+" ";
+	 s2=(String)ObjForm.regimeArray.elementAt(ObjForm.polySched[i]);
+      s=s+s2;
+	//decide whether touse the users output routine
+      if (userRoutine) custom.writeSchedule(out,savedSchedsCount,s1,s2);
+      else out.println(s);
+      }
+     //parent.console.println("just did a saveSched");
+ }/*end try*/
+  catch(Exception e){
+   parent.console.println("Error saving the schedule: i= " +i);
+   parent.console.println(e.toString());
+  } /*end catch*/
+   finally { try { if (out != null) out.close(); } catch (Exception e) {} }      
+ } /*end saveASched()*/  
+
+/**
+*Save the graph data to a user specified file
+*Calls  AGraph.append() for each instance of a
+*visible graph.  Graphs that aren't visible aren't saved
+*/
+ public void saveGraphs(){
+  if(!checkGraph.isSelected())return;
+   boolean userSuccess=false;
+  for(int i=1;i<=UserInput.nComponents;i++){
+   if(parent.form[i].isGraph() && parent.form[i].graph.isVisible()){
+     userSuccess=true;
+     if(parent.form[i].graph.ag[1] instanceof AGraph){
+	 String fName=ObjForm.findFile(p2.getText());
+       for (int j=1;j<parent.form[i].graph.ag.length;j++)
+        parent.form[i].graph.ag[j].append(fName);
+     }
+   }/*end if*/    
+  }/*end for i*/
+   if (!userSuccess)parent.console.println("   Only visible graphs are saved!");
+ }/*end saveGraphs()*/
+
+
+ /**
+ *Save everything that the user requested.
+ *This is called at the end of a Metropolis iteration
+ *@param iter is the iteration sent from Metropolis algorithm
+ */
+ public void saveAll(int iter){
+  if(saveIter!=0 && iter%saveIter==0){
+   savedSchedsCount++;  //n of saved schedules
+   saveASched(p1.getText().trim(),true);
+   saveGraphs();
+   for (int i=1;i<=nFlow;i++){
+       flowPanel[i].saveFlow();
+    for (int j=1;j<=UserInput.nBKofF[i];j++)
+       blockPanel[i][j].saveBlock();   
+    }/*end for i*/   
+   delCount=0;
+   //parent.console.println("saving on iteration " + iter);
+  }//end if
+ return;
+ }/*end saveAll()*/
+ 
+ /**
+ *Save everything that the user requested.
+ *This is called when the user pushes the save button
+ *Otherwise its the same as saveAll
+ */
+ public void saveManual(){
+   savedSchedsCount++;  //n of saved schedules
+   saveASched(p1.getText().trim(),true);
+   saveGraphs();
+   for (int i=1;i<=nFlow;i++){
+       flowPanel[i].saveFlow();
+    for (int j=1;j<=UserInput.nBKofF[i];j++)
+       blockPanel[i][j].saveBlock();   
+    }/*end for i*/     
+ return;
+ }/*end saveManual()*/
+
+    /**
+     *Called when the user saves a project file with the import option
+     *This is useful for providing output needed by a report generator
+     *It saves everything thats in the objective function
+     */
+    public void saveImport(){
+	if(!checkImport.isSelected())return;
+	delCount=2;
+	deleteAll(); //delete all checked files without asking 
+	savedSchedsCount=1;
+	saveASched(p1.getText().trim(),true);
+	saveGraphs();
+	for (int i=1;i<=nFlow;i++){
+	    flowPanel[i].checkFlow.setSelected(true);
+	    flowPanel[i].saveFlow();
+	    for (int j=1;j<=UserInput.nBKofF[i];j++){
+		blockPanel[i][j].checkBlock.setSelected(true);
+		blockPanel[i][j].saveBlock();  
+	    } 
+	}/*end for i*/   
+    }/*end saveImport()*/
+
+    /**
+     *Save user  settings to a file for possible future use
+     */
+    public void writeSettings(PrintWriter out){
+	if(parent.isSaveImport)saveImport(); //save output 
+	out.println("  <importSave value=\""+checkImport.isSelected()+"\" />");
+	out.println("  <schedFile value=\""+schedButton.getFileName()+"\" check=\""+checkSched.isSelected()+"\" />");
+	out.println("  <graphFile value=\""+graphButton.getFileName()+"\" check=\""+checkGraph.isSelected()+"\" />");
+	
+	//save a flow  and block section
+	int  i=0,
+	    cnt=0, //keep track of the n of FlowForms
+	    cnt2=1; //keep track of the n of subcomponent BlockForms
+	while(i<UserInput.nComponents){
+	    if(cnt>nFlow)break;
+	    i++;
+	    if(parent.form[i] instanceof FlowForm){
+		 cnt++;
+		 String[] title=parent.form[i].getTitle().split(" ");
+		 title[0]=title[0]+" "+parent.form[i].graph.getGTitle();
+		 String fName=flowPanel[cnt].flowButton.getFileName();
+                 boolean check=flowPanel[cnt].checkFlow.isSelected();
+		 out.println("  <flowFile title=\""+title[0]+"\" value=\""+fName+"\" check=\""+check+"\" />");
+	    }
+	    cnt2=1;
+	    while (cnt2<=UserInput.nBKofF[cnt] && i<UserInput.nComponents){
+		i++;
+		if(parent.form[i] instanceof BlockForm){
+		  String[] title=parent.form[i].getTitle().split(" ");
+		  title[0]=title[0]+" "+parent.form[i].graph.getGTitle();
+		  String fName=blockPanel[cnt][cnt2].blockButton.getFileName();
+		  boolean check=blockPanel[cnt][cnt2].checkBlock.isSelected();
+		  out.println("  <blockFile title=\""+title[0]+"\" value=\""+fName+"\" check=\""+check+"\" />");
+		    cnt2++;
+		}
+	    }/*end while cnt2*/
+	     
+	}/*end while i*/
+  
+	Rectangle bds=getBounds();
+	out.println("  <bounds height=\""+bds.height+"\" width=\""+bds.width+"\" x=\""+bds.x+"\" y=\""+bds.y+"\" />");
+    }
+
+    /**
+     *Read settings from an xml project file.  This is called from 
+     *ProjectDialog.readProjectFile
+     **/
+    public void readSettings(String qName,Attributes atts){
+	try{
+	isReadSettings=true;//allow flows to be checked, see CheckListener
+
+	if(qName.equals("schedFile")){
+	    schedButton.setFileName(atts.getValue(0));
+	    checkSched.setSelected(false);
+	    if(atts.getLength()>1 && atts.getValue(1).equals("true"))
+	       checkSched.setSelected(true);
+	}
+
+	if(qName.equals("graphFile")){
+	    graphButton.setFileName(atts.getValue(0));
+	    checkGraph.setSelected(false);
+	    if(atts.getLength()>1 && atts.getValue(1).equals("true"))
+	       checkGraph.setSelected(true);
+	}
+
+	
+
+	
+	if(qName.equals("flowFile") && atts.getLength()>=2){
+	    for(int i=1; i<=nFlow;i++){
+		String[] title=flowPanel[i].ff.getTitle().split(" ");
+                String[] title2=atts.getValue(0).split(" ");
+		if(title[0].equals(title2[0])){	
+		    flowPanel[i].flowButton.setFileName(atts.getValue(1));
+		    if(atts.getLength()>2 && atts.getValue(2).equals("true")){
+			 flowPanel[i].checkFlow.setSelected(true);
+		    }
+		    break;
+		}
+	    }           
+	}
+
+      	if(qName.equals("blockFile") && atts.getLength()>=2){
+            String[] val=atts.getValue(0).split("[()]");
+	    int num=1;
+	    try{ num=Integer.parseInt(val[1]); //parent flow component
+	    }catch(Exception e){return;}
+	 
+	    for(int i=1; i<=UserInput.nBKofF[num];i++){
+		String[] title=blockPanel[num][i].bf.getTitle().split(" ");
+		String[] title2=atts.getValue(0).split(" ");
+		if(title[0].equals(title2[0])){
+		  blockPanel[num][i].blockButton.setFileName(atts.getValue(1));
+		  if(atts.getLength()>2 && atts.getValue(2).equals("true"))
+			blockPanel[num][i].checkBlock.setSelected(true);
+		    break;
+		}           
+	    }
+	}
+
+
+	try{
+	    if(qName.equals("bounds") && atts.getLength()>=4){
+		int height=Integer.parseInt(atts.getValue(0));
+		int width=Integer.parseInt(atts.getValue(1));
+		int x=Integer.parseInt(atts.getValue(2));
+		int y=Integer.parseInt(atts.getValue(3));
+		setBounds(x,y,width,height);
+	    }
+	
+	}catch(Exception e){
+	    System.out.println("setBounds in GISViewer.readSettings():"+e);
+	}
+	if(qName.equals("importSave") && atts.getValue(0).equals("true")){
+	    checkImport.setSelected(true);
+	    pack();
+	}
+	isReadSettings=false;
+	}catch(Exception e){parent.console.println(getTitle()+".readSettings() "+e);}
+    } 
+
+
+
+/**
+*
+*inner class to make panels for saving BLOCK component data
+*in the OutputDialog class
+*/
+class BlockSavePanel extends JPanel{
+  int saveBlockCount=0; //keep track of n of saves
+  FlowData[] data; //get a pointer to the Flow data 
+  JTextField text;
+  JFileButton blockButton;
+  JCheckBox checkBlock;
+  String file;
+  BlockForm bf;
+  BlockForm.BlockGIS gisData; //data giving blocks and polyID's
+  FrameMenu parent2;  //seems  redundant since parent2=parent, but needed for windows 95 at the time of writing
+  int flowId,blockId;
+BlockSavePanel(BlockForm bf, FrameMenu parent2, int flowId, int blockId){
+   super();
+   this.bf=bf;
+  this.parent2=parent2;
+  this.flowId=flowId;
+  this.blockId=blockId;
+   file=UserInput.ExampleDir +  "saveBlock" + flowId+"_"+blockId;
+   text=new JTextField(file,20);
+   blockButton = new JFileButton("Block" + flowId+"("+blockId+")" + " SaveFile",parent2,text,null,null);
+  checkBlock=new JCheckBox("Include",false);
+  //don't try to save unless this FlowForm is in the model
+  checkBlock.addItemListener(new CheckListener());
+  this.add(checkBlock);this.add(blockButton);this.add(text);
+}//end constructor
+
+/**
+*delete this savefile
+*/
+public void delete(){
+      String fName=ObjForm.findFile(text.getText());
+      File file2=new File(fName);
+      if (file2.exists() && checkBlock.isSelected()){
+       file2.delete();
+       if(isPrint)parent2.console.println("\nDeleted " + fName);
+       saveBlockCount=0; //reset n of saves
+      }/*end if*/
+}/*end delete()*/
+
+ 
+
+/**
+*Save the current block structure to a user specified file
+*/
+ public void saveBlock(){
+     if(!bf.dataRead)checkBlock.setSelected(false);
+  if(!checkBlock.isSelected())return;
+  String s,s1,s2;
+  int yrs=bf.yrs,ID;
+  float size, blockSize;
+  PrintWriter out=null;
+   try {
+       String fName=ObjForm.findFile(text.getText());
+       File nf=new File(fName);
+       boolean isAppend=nf.exists();//append mode if it already exists
+  out = new PrintWriter(new BufferedWriter(new FileWriter(fName,isAppend)));
+    saveBlockCount++;//keep track of n of saves
+    for (int t=1;t<=yrs;t++){  //t is the scaled year, so that the first year is 1
+      bf.hbp_blkt(t);
+      if(bf.blockav[t]==0)continue; //no blocks for year t
+      gisData=bf.gisData;
+     for (int i=1;i<=gisData.nBlocks;i++){
+	 blockSize=0f;
+	 for (int j=1;j<gisData.polyID[i].length;j++){ //get total block size
+          blockSize+=bf.data[gisData.polyID[i][j]].size;
+	 }
+      for (int j=1;j<gisData.polyID[i].length;j++){
+       s=Integer.toString(saveBlockCount)+sep;
+       s+=Integer.toString(t+bf.xMin-1)+sep; //year
+       s+=Integer.toString(i)+sep; //block id
+	 ID=gisData.polyID[i][j]+bf.polyFirst-1; //global polygon ID
+        s1=(String)ObjForm.polyArray.elementAt(ID-1);
+      s+=s1+sep;
+	 s2=(String)ObjForm.regimeArray.elementAt(ObjForm.polySched[ID]);
+      s+=s2+sep;
+      size=bf.data[gisData.polyID[i][j]].size;
+      s+=Float.toString(size)+sep;
+      s+=Float.toString(blockSize);    
+	    out.println(s);
+      }/*end for j*/ 
+     }/*end for i*/
+    }/*end for t*/
+    
+ }/*end try*/
+  catch(Exception e){
+   parent2.console.println("Error saving the Block" +flowId+ "("+blockId+") data");
+   parent2.console.println(e.toString());
+  } /*end catch*/
+   finally { try { if (out != null) out.close(); } catch (Exception e) {} }      
+ } /*end saveBlock()*/ 
+
+ /**
+*User clicks a checkbox inner(inner) class
+*/
+public class CheckListener implements ItemListener{
+ public void itemStateChanged(ItemEvent e){
+    //don't allow this to savedata unless the FlowForm component is in the model
+     if(isReadSettings)return;
+     if(!parent2.compBox[bf.idNum].isSelected())
+       checkBlock.setSelected(false);
+    	 
+ }/*end itemStateChanged*/
+} /*end inner CheckListener class*/
+
+}/*end inner BlockSavePanel class*/
+
+/**
+*==============================================
+*inner class to make panels for saving flow component data
+*in the OutputDialog class
+*/
+class FlowSavePanel extends JPanel{
+  FlowData[] data; //get a pointer to the data in Polygons class
+  JTextField text;
+  JFileButton flowButton;
+  JCheckBox checkFlow;
+  String file;
+  FlowForm ff;
+  FrameMenu parent2;  //seems  redundant since parent2=parent, but needed for windows 95
+  
+FlowSavePanel(FlowForm ff, FrameMenu parent2, int id){
+   this.ff=ff;
+  this.parent2=parent2;
+   file=UserInput.ExampleDir +  "saveFlow" + id;
+   text=new JTextField(file,20);
+   flowButton = new JFileButton("Flow" + id + " SaveFile",parent2,text,null,null);
+  checkFlow=new JCheckBox("Include",false);
+  //don't try to save unless this FlowForm is in the model
+  checkFlow.addItemListener(new CheckListener());
+  this.add(checkFlow);this.add(flowButton);this.add(text);
+}//end constructor
+
+/**
+*delete this savefile
+*/
+public void delete(){
+      String fName=ObjForm.findFile(text.getText());
+      File file2=new File(fName);
+      if (file2.exists() && checkFlow.isSelected()){
+       file2.delete();
+       if(isPrint)parent2.console.println("\nDeleted " + fName);
+      }/*end if*/
+}/*end delete()*/
+
+/**
+*Save the current flow to a user specified file
+*/
+ public void saveFlow(){
+     if(!ff.dataRead)checkFlow.setSelected(false);
+  if(!checkFlow.isSelected())return;
+  int row=0;
+  int nPolys=ff.polyLast-ff.polyFirst+1;
+  String s,s2;
+  int Id,i;
+  boolean test=true; //used for superFlow components
+  if (ff.isSuperFlow){
+   test=ff.findNextData(0); //get the first dataset 
+   nPolys=0;  
+    while (test){
+     nPolys+=ff.polyLast-ff.polyFirst+1; //total n of owned polygons
+     test=ff.findNextData(ff.polyFirst);
+    }/*end while*/ 
+   }/*end ff.isSuperFlow()*/  
+   
+   PrintWriter out=null;
+   try {
+       String fName=ObjForm.findFile(text.getText());
+    File nf=new File(fName);
+    boolean isAppend=nf.exists();//append mode if it already exists
+    out = new PrintWriter(new BufferedWriter(new FileWriter(fName,isAppend)));
+     
+    if (ff.isSuperFlow) test=ff.findNextData(0); //get the first dataset   
+    while (test){
+     data=ff.data; //pointer to the data
+    for(int ig=ff.polyFirst;ig<=ff.polyLast;ig++){
+      i=ig-ff.polyFirst+1; //transform global to local polygon index
+      row=data[i].flowPtr(ObjForm.polySched[ig]);
+        s2=(String)ObjForm.polyArray.elementAt(ig-1);
+       try{
+	 if (Double.valueOf(s2).intValue()==Double.valueOf(s2).doubleValue()) //check if integer
+	  s2=Integer.toString(Double.valueOf(s2).intValue());
+       } catch (Exception es){/*not a number*/;}
+       s=Integer.toString(savedSchedsCount)+sep+s2+sep;
+        s2=(String)ObjForm.regimeArray.elementAt(ObjForm.polySched[ig]);
+       try{
+	 if (Double.valueOf(s2).intValue()==Double.valueOf(s2).doubleValue()) //check if integer
+	  s2=Integer.toString(Double.valueOf(s2).intValue());
+       } catch (Exception es){/*not a number*/;}	
+       s=s+s2;
+      for (int j=1 ;j<data[i].flow[row].length;j++)  //write  the year,flow pairs
+       s=s+sep+ Integer.toString(data[i].flow[row][j]);
+       out.println(s);
+      } /*end for ig=global index*/
+       test=ff.findNextData(ff.polyFirst);
+     }/*end while()*/
+ }/*end try*/
+  catch(Exception e){
+   parent2.console.println("Error saving the flow");
+   parent2.console.println(e.toString());
+  } /*end catch*/
+   finally { try { if (out != null) out.close(); } catch (Exception e) {} }      
+ } /*end saveFlow()*/ 
+ 
+ /**
+*User clicks a checkbox inner(inner) class
+*/
+public class CheckListener implements ItemListener{
+ public void itemStateChanged(ItemEvent e){
+    //don't allow this to savedata unless the FlowForm component is in the model
+     if(isReadSettings)return;
+   if (!ff.dataRead)
+       checkFlow.setSelected(false);
+    	 
+ }/*end itemStateChanged*/
+} /*end inner CheckListener class*/
+
+}/*end inner FlowSavePanel class*/
+
+
+} /*end OutputDialog class*/
+
+
+ 
