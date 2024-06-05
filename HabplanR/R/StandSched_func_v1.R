@@ -30,7 +30,8 @@ standSched <- function(site.shp){
   #Add the new column
   new.shp <- merge(site.shp, sched, by = "StdID")
   #Save to the working directory
-  writeVector(new.shp, "Site_with_schedule", overwrite=TRUE)
+  writeVector(new.shp, "./Site_with_schedule.shp", filetype="ESRI Shapefile",
+            overwrite=TRUE)
   #writeOGR(new.shp, ".", "Site_with_schedule", driver = "ESRI Shapefile",
   #         overwrite_layer = T)
 
