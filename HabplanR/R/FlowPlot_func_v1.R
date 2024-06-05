@@ -47,6 +47,7 @@ flowPlot <- function(flow.data, nyear){
     #geom_hline(yintercept = (target+th.hi), linetype = 2, color = "black") +
     #geom_hline(yintercept = (target-th.lo), linetype = 2, color = "black") +
     #scale_color_viridis_d() +
+    scale_x_continuous(expand = c(0, 0)) +
     ggtitle("Flow output over time") +
     xlab("Year") +
     ylab("Flow") +
