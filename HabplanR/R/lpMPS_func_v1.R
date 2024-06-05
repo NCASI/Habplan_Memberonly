@@ -50,7 +50,7 @@ lpMPS <- function(std.data = std.data, nyear = "", filename = "lpMPS",
 
   #filename = "lpMPS"
   #nyear = 35
-  bio1 <- read.csv("./example/RCW/RCW/Flows/Biol2_test.dat", sep="",
+  bio1 <- read.csv("./Biol2_test.dat", sep="",
                    header = F)
   colnames(bio1) <- c("std_id", "reg_id", "weight")
 
