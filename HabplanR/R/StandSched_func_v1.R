@@ -14,24 +14,18 @@
 
 standSched <- function(site.shp){
 
+  site.shp.2 <- site.shp
   #Read in saved schedule from habplan run
   sched <- read.csv("./saveSched")
   #Change column headings so that it's easier to work with
   colnames(sched) <- c("id", "StdID", "sched")
   #Remove any blank spaces that may have been brought in from the import
   sched$StdID <- gsub(" ", "", sched$StdID)
-  #Find any differences between the shapefile and saved stand ids
-  #std.diff <- intersect(site.shp$StdID, sched$std.id)
-  #Filter both files so they match
-  #sched <- sched %>%
-  #  filter(std.id %in% std.diff)
-  #site.shp@data <- site.shp@data %>%
-  #  filter(site.shp@data[["StdID"]] %in% std.diff)
   #Add the new column
-  new.shp <- merge(site.shp, sched, by = "StdID")
+  new.shp <- merge(site.shp.2, sched, by = "StdID")
   #Save to the working directory
-  #writeVector(new.shp, "./Site_with_schedule.shp", filetype="ESRI Shapefile",
-  #          overwrite=TRUE)
+  writeVector(new.shp, "./Site_with_schedule.shp", filetype="ESRI Shapefile",
+            overwrite=TRUE)
   #writeOGR(new.shp, ".", "Site_with_schedule", driver = "ESRI Shapefile",
   #         overwrite_layer = T)
 
