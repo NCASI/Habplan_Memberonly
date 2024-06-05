@@ -53,7 +53,7 @@ flowPlot <- function(flow.data, nyear){
     theme_classic() +
     theme(legend.position = "none")
 
-  ggsave(file = paste0("./example/RCW/RCW/Outputs/Single_flow.png"), width = 200, height = 120,
+  ggsave(file = paste0("./Single_flow.png"), width = 200, height = 120,
          dpi = 600, units = "mm")
 
   return(f1.plot)
