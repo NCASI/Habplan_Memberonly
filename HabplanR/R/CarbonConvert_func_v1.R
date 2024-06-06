@@ -190,7 +190,7 @@ CarbonConvert <- function(std.data){
   }
   final.data <- unlist(std.list)
   #summary(final.data)
-  data.file <- file(paste0("./Carbon_test.dat"))
+  data.file <- file(paste0("./Carbon_data.dat"))
   writeLines(final.data, data.file)
   close(data.file)
   return(final.data)
