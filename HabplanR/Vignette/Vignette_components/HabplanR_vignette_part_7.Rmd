@@ -1,0 +1,183 @@
+---
+output: word_document
+vignette: >
+  %\VignetteIndexEntry{HabplanR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+```{r, include = FALSE, echo = F}
+
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(broom)
+library(spdep)
+library(terra)
+library(tidyterra)
+library(HabplanR)
+
+```
+
+For this final run, we are going to apply more substantial changes to each flow component, with unique values for each one. 
+
+For the HSI flow component, we are going to have a much broader thlo set to 5000 acres, but keep the thhi at 10000. However, we are going to set much different targets for the model. We are now aiming for 15000 in year 1, 5000 in year 20, and only 2000 by year 30 (1,15000;20,5000;30,2000).
+
+For the pine pulpwood flow component, we believe we should be able to achieve much higher values. Therefore, we will set the thlo to 2000, but have the thhi be 100000. With such a large upper threshhold, we can set relatively conservative targets for our model. We will aim for 100 in year 1, 2000 in year 20, and keep this at 2000 for year 30 (1,100;20,2000;30,2000). 
+
+```{r flow.comp.3, warning = FALSE, eval = F}
+
+#Info for f1 component ----
+f1.file <- paste0(wd,"HSI.dat")
+f1.bygone <- ""
+f1.time0 <- "10000"
+f1.goal0 <- "0.1"
+f1.thlo <- "5000"
+f1.thhi <- "10000"
+f1.goalplus <- ".05"
+f1.goalf <- "0.5"
+f1.slope <- "0.0"
+f1.weightf <- "1.0"
+f1.weight0 <- "1.0"
+f1.model <- "1,15000;20,5000;30,2000;"
+f1.title <- "Breed.dat"
+#Combine f1 components for writing
+f1.comp <- c('<flow title="F1 Component">',
+             paste0('<file value="', f1.file, '" />'),
+             paste0('<bygone value="', f1.bygone, '" />'),
+             paste0('<time0 value="', f1.time0, '" />'),
+             paste0('<goal0 value="', f1.goal0, '" />'),
+             paste0('<threshLo value="', f1.thlo, '" />'),
+             paste0('<threshHi value="', f1.thhi, '" />'),
+             paste0('<goalPlus value="', f1.goalplus, '" />'),
+             paste0('<goalF value="', f1.goalf, '" />'),
+             paste0('<slope value="', f1.slope, '" />'),
+             paste0('<weightF value="', f1.weightf, '" />'),
+             paste0('<weight0 value="', f1.weight0, '" />'),
+             paste0('<model value="', f1.model, '" />'),
+             paste0('<title value="', f1.title, '" />'),
+             '<bounds height="330" width="366" x="553" y="443" />',
+             "</flow>")
+
+
+#Info for f2 component ----
+f2.file <- paste0(wd, "Harv_P_Pulp_Tons.dat")
+f2.bygone <- ""
+f2.time0 <- "1000"
+f2.goal0 <- "0.1"
+f2.thlo <- "2000"
+f2.thhi <- "100000"
+f2.goalplus <- ".05"
+f2.goalf <- "0.5"
+f2.slope <- "0.0"
+f2.weightf <- "1.0"
+f2.weight0 <- "1.0"
+f2.model.1 <- "1,100;20,2000;30,2000;"
+f2.title <- "Harv_P_Pulp_Tons.dat"
+#Combine f2 components for writing
+f2.comp <- c('<flow title="F2 Component">',
+             paste0('<file value="', f2.file, '" />'),
+             paste0('<bygone value="', f2.bygone, '" />'),
+             paste0('<time0 value="', f2.time0, '" />'),
+             paste0('<goal0 value="', f2.goal0, '" />'),
+             paste0('<threshLo value="', f2.thlo, '" />'),
+             paste0('<threshHi value="', f2.thhi, '" />'),
+             paste0('<goalPlus value="', f2.goalplus, '" />'),
+             paste0('<goalF value="', f2.goalf, '" />'),
+             paste0('<slope value="', f2.slope, '" />'),
+             paste0('<weightF value="', f2.weightf, '" />'),
+             paste0('<weight0 value="', f2.weight0, '" />'),
+             #paste0('<model value="1,', f2.target, ';', f2.next.year, ',',
+             #      f2.next.target, '" />'),
+             paste0('<title value="', f2.title, '" />'),
+             '<bounds height="331" width="368" x="1260" y="440" />',
+             "</flow>")
+
+```
+
+```{r write.proj.3, warning = FALSE, echo = T, eval = F}
+
+#Provide each of these flow component objects to the function and run
+writeProj(f1.comp = f1.comp, f2.comp= f2.comp)
+
+```
+
+Now we have a project file saved to our working directory. Let's open habplan and see if this has worked.
+
+_IMPORTANT - USER MUST RENAME OR MOVE SAVEFLOW1 AND SAVESCHED FROM WORKING DIRECTORY IF THEY DO NOT WANT THE FILES TO BE DELETED_
+
+```{r run.habplan.3, warning = FALSE, echo = T, eval = F}
+
+#Open Habplan (if run from here, R functionality will cease until Habplan is closed)
+shell("h", wait=TRUE) 
+
+```
+
+## Function: plotting an individual flow output - _FlowPlot_
+
+After running Habplan, we will have several flows saved to our working directory. The option still exists to interactively watch  the charts in a Habplan window. However, we provide a function to  visualize each flow individually. 
+
+First read in the flow output file, and then feed this file into the function.
+
+```{r flow.plot.3, warning = FALSE, echo = T, eval = F}
+#Read in one of the flow files
+flow1 <- read.csv("./saveFlow1", sep="")
+flow2 <- read.csv("./saveFlow2", sep="")
+
+#Input the flow file into the function, and number of years
+flowPlot(flow.data = flow1, nyear = 35)
+flowPlot(flow.data = flow2, nyear = 35)
+
+```
+
+```{r flow.plot.t3, warning = FALSE, echo = F, eval = T}
+
+#Read in one of the flow files
+flow1 <- read.csv("./Run_3/saveFlow1", sep="")
+
+#Input the flow file into the function, and number of years
+flowPlot(flow.data = flow1, nyear = 35)
+
+```
+
+Figure 18. The amount of flow (habitat area) attained over time as a result of the suggested Habplan management schedule.
+
+```{r flow.plot.t4, warning = FALSE, echo = F, eval = T}
+
+#Read in one of the flow files
+flow2 <- read.csv("./Run_3/saveFlow2", sep="")
+
+#Input the flow file into the function, and number of years
+flowPlot(flow.data = flow2, nyear = 35)
+
+```
+
+Figure 19. The amount of flow (harvested pine pulpwood) attained over time as a result of the suggested Habplan management schedule.
+
+Again, the first figure above shows the output flow from our HSI component throughout our study period, and the second shows the amount of harvested pine pulpwood. These appear to have provided much larger yields for both HSI and hard pulpwood.
+
+We can now run the final iteration of _HabSpace_ to assess the spatial component. Even if the flow components are much better, it is still important to ensure that we have not compromised the spatial contiguity and suitability of the landscape for species of interest.
+
+## Function: spatial contiguity assessment - _HabSpace_
+
+_The HabSpace function may take several minutes to complete!_ 
+
+```{r hab.space, warning = FALSE, echo = T, eval = F}
+
+#Want to create a shapefile output for each year, to look at change
+#of regime for each stand over time.
+
+space.test <- HabSpace(site.shp = site.shp, flow = flow1, nyear = 35,
+                   mode = "terrestrial", dist = 500, level = "patch")
+
+```
+
+

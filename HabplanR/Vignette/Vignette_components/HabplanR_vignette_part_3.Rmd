@@ -1,0 +1,112 @@
+---
+output: word_document
+vignette: >
+  %\VignetteIndexEntry{HabplanR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+```{r, include = FALSE, echo = F}
+
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(broom)
+library(spdep)
+library(terra)
+library(tidyterra)
+library(HabplanR)
+
+```
+
+
+## Function: plotting an individual flow output - _FlowPlot_
+
+After running Habplan, we will have several flows saved to our working directory. The option still exists to interactively watch  the charts in a Habplan window. However, we provide a function to  visualize each flow individually. 
+
+First read in the flow output file, and then feed this file into the function.
+
+```{r flow.plot.1, warning = FALSE, echo = T, eval = F}
+#Read in one of the flow files
+flow1 <- read.csv("./saveFlow1", sep="", header = F)
+flow2 <- read.csv("./saveFlow2", sep="", header = F)
+
+#Input the flow file into the function, and number of years
+flowPlot(flow.data = flow1, nyear = 35)
+flowPlot(flow.data = flow2, nyear = 35)
+
+```
+
+```{r flow.plot.t1, warning = FALSE, echo = F, eval = T}
+
+#Read in one of the flow files
+flow1 <- read.csv("./saveFlow1", sep="", header = F)
+
+#Input the flow file into the function, and number of years
+flowPlot(flow.data = flow1, nyear = 35)
+
+```
+
+Figure 1. The amount of flow (habitat area) attained over time as a result of the suggested Habplan management schedule.
+
+```{r flow.plot.t2, warning = FALSE, echo = F, eval = T}
+
+#Read in one of the flow files
+flow2 <- read.csv("./saveFlow2", sep="", header = F)
+
+#Input the flow file into the function, and number of years
+flowPlot(flow.data = flow2, nyear = 35)
+
+```
+
+Figure 2. The amount of flow (harvested pine pulpwood) attained over time as a result of the suggested Habplan management schedule.
+
+The first figure above shows the output flow from our HSI component throughout our study period, and the second shows the amount of harvested pine pulpwood. Due to the simulation component of Habplan, the graphs created may not look exactly as shown throughout the vignette. 
+
+We are going to create 3 runs of Habplan for this vignette. To compare the flow outputs of each of these Habplan runs, we will need to save the output in separate folders. For the vignette, we created 3 folders named Run_1, Run_2, and Run_3. Save the "saveFlow1" and "saveFlow2" files into the Run_1 folder and repeat on the following runs. 
+
+Because we now have a possible solution based on the above output flows, to help make our decision on whether or not this is a viable solution, we will run an additional function _HabSpace_. This function takes the output flow information from Habplan and visualizes the flow for each year of interest.
+
+## Function: spatial contiguity assessment - _HabSpace_
+
+The HabSpace function was created to examine spatial contiguity of the landscape based on the management schedule output from Habplan. Thus, it is designed to look at the spatial aspect of the HSI flows specifically. 
+
+First, read in the shapefile containing all forest stands.
+
+```{r space.data, warning = FALSE, echo = T, eval = F}
+
+#Read in stand shapefiles
+site.shp <- vect("./Stands_final.shp")
+
+```
+
+_IMPORTANT_ The shapefile needs a data column called "StdID"
+
+We will add the shapefile of stands, and the flow of choice to the function. As before, we will set the nyear. We now have two more options with this function, mode and dist. 
+
+There are two modes to choose from, terrestrial or avian - depending on the species the HSI has been built around. If avian is chosen, the dist setting sets the distance in meters (or the unit of the shapefile) that the species of interest can comfortably travel to reach neighboring habitat patches. If the user has a terrestrial species which may still bridge gaps if the distance is short enough (e.g., crossing a road), then the avian option should be selected and a smaller dist assigned. 
+
+The HabSpace function creates several .csv files and figures, and saves these within the working directory. The function will re-write any files in the working directory if the function is run again, so be careful if any files need to be saved; renaming these files will make sure that they are not overwritten.
+
+_The HabSpace function may take several minutes to complete!_ 
+
+```{r hab.space, warning = FALSE, echo = T, eval = F}
+
+#Want to create a shapefile output for each year, to look at change
+#of regime for each stand over time.
+
+space.test <- HabSpace(site.shp = site.shp, flow = flow1, nyear = 35,
+                   mode = "terrestrial", dist = 500, level = "patch")
+
+```
+
+The above function will create maps for each year and save these in the working directory. We have also saved summary graphs, raw data, and summary data for each year.
+
